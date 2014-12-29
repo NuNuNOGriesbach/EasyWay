@@ -41,7 +41,7 @@ class Adapter implements AdapterInterface
      * @var \PDO
      */
     protected $_db;
-    
+    protected $_schemma;
     /**
      *
      * @var \Ew\Db\Table\SqlFactory
@@ -448,12 +448,18 @@ class Adapter implements AdapterInterface
             'precision' => $floatPart,
         );
     }
+    
     public function getColumns($table)
     {
-        $tabeName = $this->getTableName($table);
+        static $cacheResult = Array();
+        $tableName = $this->getTableName($table);
+        
+        if(isset($cacheResult[$tableName])){
+            return $cacheResult[$tableName];
+        }
         
         $select = $this->factory('select', $table);
-        $select->setSqlBase('show columns from ' . $tabeName, true, true);
+        $select->setSqlBase('show columns from ' . $tableName, true, true);
         
         $columns = $select->fetchAll();
         $return = Array();
@@ -476,8 +482,81 @@ class Adapter implements AdapterInterface
                 
             );
         }
+        $cacheResult[$tableName] = $return;
+        return $cacheResult[$tableName];
+        
+    }
+    
+    public function getIndexes($table)
+    {
+        static $cacheResult = Array();
+        $tableName = $this->getTableName($table);
+        
+        if(isset($cacheResult[$tableName])){
+            return $cacheResult[$tableName];
+        }
+        
+        $columns  = $this->getColumns($table);
+        
+        $select = $this->factory('select', $table);
+        $select->setSqlBase('show index from ' . $tableName, true, true);
+        
+        $indexes = $select->fetchAll();
+        $return = Array();
+        
+        $lastIndex = '';
+        
+        foreach($indexes as $index => $info)
+        {
+            $idxName = $info['Key_name'];
+              
+            if($lastIndex != $idxName){
+                $return[$idxName] = Array(
+                    'name' => $idxName,                
+                    'unique' => $info['Non_unique']==0,
+                    'primary' => $columns[$info['Column_name']]['primary'],
+                    'auto_increment' => $columns[$info['Column_name']]['auto_increment'],      
+                    'fields' => Array(),
+                );
+                
+                
+            }
+            
+           $return[$idxName]['fields'][$info['Column_name']] = Array(
+               'name' => $info['Column_name'],
+               'seq' => $info['Seq_in_index'],
+               'can_be_null' => $info['Null']=='YES',               
+               );
+            
+            $lastIndex = $idxName;
+        }
+        
+        $cacheResult[$tableName] = $return;
+        return $cacheResult[$tableName];
+        
+    }
+    
+    public function getTables($schemma = null)
+    {
+        if($schemma === null){
+            $schemma = $this->_schemma;
+        }
+        
+        $select = $this->factory('select', $schemma);
+        $select->setSqlBase('show tables from ' . $schemma, true, true);
+        
+        $tables = $select->fetchAll();
+        $return = Array();
+        foreach($tables as $info){
+            foreach($info as $field => $tableName){
+                $id = "$schemma.$tableName";
+                $return[$id] = Array(
+                    'schemma' => $schemma,
+                    'name' => $tableName
+                );
+            }
+        }
         
         return $return;
-        
     }
 }

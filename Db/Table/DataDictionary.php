@@ -22,6 +22,7 @@ use \Ew\Form\Elements\TextField;
 class DataDictionary {
     const FIELD_MAP = 'fieldMap';
     const PREFIX = 'prefix';
+    const TABLE = 'table';
     
     /**
      * Nome amigável da tabela para insersão em mensagens de erro e titulos de formulários
@@ -31,6 +32,12 @@ class DataDictionary {
     
     protected $_prefix = '';
     protected $_fieldMap = Array();
+    
+    /**
+     *
+     * @var \Ew\Db\Table\TableAbstract
+     */
+    protected $table = null;
     
     protected $_elementsNamespaces = Array("\\Ew\\Form\\Elements\\");
     

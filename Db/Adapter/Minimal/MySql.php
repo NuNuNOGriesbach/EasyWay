@@ -15,6 +15,7 @@ class MySql extends \Ew\Db\Adapter
     public function connect($params)
     {
         try{
+            $this->_schemma = $params['schemma'];
             $this->_db = new \PDO('mysql:host='.$params['host'].';port='.$params['port'].';dbname='.$params['schemma'].'', $params['user'], $params['password'], $params['extras']);
         }  catch (\Exception $e){
             $this->error($e->getMessage());
